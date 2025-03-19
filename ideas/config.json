@@ -1,0 +1,361 @@
+{
+    "service_name": "products-service",
+    "environments": {
+      "dev": {
+        "account_id": "123456789012",
+        "region": "us-east-1",
+        "profile": "dev-profile",
+        "services": {
+          "lambda": {
+            "enabled": true,
+            "function_name": "dev-products-api",
+            "alias": "dev",
+            "memory_size": 1024,
+            "timeout": 30,
+            "runtime": "nodejs18.x",
+            "provisioned_concurrency": 0,
+            "reserved_concurrency": -1,
+            "log_retention_days": 14,
+            "api_gateway": {
+              "enabled": true,
+              "cors": true,
+              "auth": "none"
+            }
+          },
+          "vpc": {
+            "enabled": true,
+            "use_existing": true,
+            "vpc_id": "vpc-12345abcde",
+            "subnet_ids": ["subnet-a1b2c3d4", "subnet-e5f6g7h8"],
+            "create_security_groups": false,
+            "security_group_ids": ["sg-1234abcd"]
+          },
+          "aurora": {
+            "enabled": true,
+            "use_existing": true,
+            "cluster_id": "dev-aurora-cluster",
+            "secret_name": "dev/aurora/credentials",
+            "configure_proxy": false
+          },
+          "mongo": {
+            "enabled": true,
+            "use_existing": true,
+            "secret_name": "dev/mongo/credentials"
+          },
+          "dynamodb": {
+            "enabled": true,
+            "tables": [
+              {
+                "name": "dev-products",
+                "partition_key": {
+                  "name": "id",
+                  "type": "string"
+                },
+                "sort_key": {
+                  "name": "category",
+                  "type": "string"
+                },
+                "billing_mode": "PAY_PER_REQUEST",
+                "ttl_attribute": "expiresAt",
+                "stream_enabled": false,
+                "point_in_time_recovery": false,
+                "gsi": [
+                  {
+                    "name": "CategoryIndex",
+                    "partition_key": {
+                      "name": "category",
+                      "type": "string"
+                    },
+                    "sort_key": {
+                      "name": "created_at",
+                      "type": "string"
+                    },
+                    "projection_type": "ALL"
+                  }
+                ]
+              }
+            ]
+          },
+          "sqs": {
+            "enabled": true,
+            "queues": [
+              {
+                "name": "dev-products-queue",
+                "fifo": false,
+                "visibility_timeout": 30,
+                "message_retention_seconds": 345600,
+                "dlq": {
+                  "enabled": true,
+                  "max_receive_count": 3
+                }
+              }
+            ]
+          },
+          "sns": {
+            "enabled": true,
+            "topics": [
+              {
+                "name": "dev-product-events",
+                "fifo": false,
+                "subscriptions": [
+                  {
+                    "endpoint": "dev-products-queue",
+                    "protocol": "sqs"
+                  }
+                ]
+              }
+            ]
+          },
+          "s3": {
+            "enabled": true,
+            "buckets": [
+              {
+                "name": "dev-products-assets",
+                "versioning": true,
+                "lifecycle_rules": [
+                  {
+                    "prefix": "temp/",
+                    "expiration_days": 7
+                  }
+                ],
+                "cors_enabled": true,
+                "public_read": false,
+                "encryption": "AES256"
+              }
+            ]
+          },
+          "redis": {
+            "enabled": false,
+            "use_existing": false,
+            "cluster_id": "",
+            "node_type": "cache.t3.micro",
+            "num_nodes": 1
+          },
+          "step_functions": {
+            "enabled": false,
+            "state_machines": []
+          },
+          "event_bridge": {
+            "enabled": false,
+            "rules": []
+          },
+          "cloudfront": {
+            "enabled": false,
+            "distribution": {}
+          },
+          "waf": {
+            "enabled": false,
+            "acl": {}
+          },
+          "env_variables": {
+            "CORS_ENABLED": "true",
+            "USER_VAR": "dev-user",
+            "CORS_ORIGIN": "*",
+            "ENABLE_CACHE": "false",
+            "DEBUG_MODE": "true",
+            "API_VERSION": "v1"
+          }
+        }
+      },
+      "prod": {
+        "account_id": "987654321098",
+        "region": "us-east-1",
+        "profile": "prod-profile",
+        "services": {
+          "lambda": {
+            "enabled": true,
+            "function_name": "prod-products-api",
+            "alias": "prod",
+            "memory_size": 2048,
+            "timeout": 30,
+            "runtime": "nodejs18.x",
+            "provisioned_concurrency": 5,
+            "reserved_concurrency": 50,
+            "log_retention_days": 90,
+            "api_gateway": {
+              "enabled": true,
+              "cors": true,
+              "auth": "cognito"
+            }
+          },
+          "vpc": {
+            "enabled": true,
+            "use_existing": true,
+            "vpc_id": "vpc-98765zyxwv",
+            "subnet_ids": ["subnet-p9o8i7u6", "subnet-l5k4j3h2"],
+            "create_security_groups": false,
+            "security_group_ids": ["sg-9876wxyz"]
+          },
+          "aurora": {
+            "enabled": true,
+            "use_existing": true,
+            "cluster_id": "prod-aurora-cluster",
+            "secret_name": "prod/aurora/credentials",
+            "configure_proxy": true
+          },
+          "mongo": {
+            "enabled": true,
+            "use_existing": true,
+            "secret_name": "prod/mongo/credentials"
+          },
+          "dynamodb": {
+            "enabled": true,
+            "tables": [
+              {
+                "name": "prod-products",
+                "partition_key": {
+                  "name": "id",
+                  "type": "string"
+                },
+                "sort_key": {
+                  "name": "category",
+                  "type": "string"
+                },
+                "billing_mode": "PROVISIONED",
+                "read_capacity": 5,
+                "write_capacity": 5,
+                "ttl_attribute": "expiresAt",
+                "stream_enabled": true,
+                "stream_view_type": "NEW_AND_OLD_IMAGES",
+                "point_in_time_recovery": true,
+                "gsi": [
+                  {
+                    "name": "CategoryIndex",
+                    "partition_key": {
+                      "name": "category",
+                      "type": "string"
+                    },
+                    "sort_key": {
+                      "name": "created_at",
+                      "type": "string"
+                    },
+                    "projection_type": "ALL",
+                    "read_capacity": 5,
+                    "write_capacity": 5
+                  }
+                ]
+              }
+            ]
+          },
+          "sqs": {
+            "enabled": true,
+            "queues": [
+              {
+                "name": "prod-products-queue",
+                "fifo": false,
+                "visibility_timeout": 30,
+                "message_retention_seconds": 345600,
+                "dlq": {
+                  "enabled": true,
+                  "max_receive_count": 3
+                }
+              }
+            ]
+          },
+          "sns": {
+            "enabled": true,
+            "topics": [
+              {
+                "name": "prod-product-events",
+                "fifo": false,
+                "subscriptions": [
+                  {
+                    "endpoint": "prod-products-queue",
+                    "protocol": "sqs"
+                  }
+                ]
+              }
+            ]
+          },
+          "s3": {
+            "enabled": true,
+            "buckets": [
+              {
+                "name": "prod-products-assets",
+                "versioning": true,
+                "lifecycle_rules": [
+                  {
+                    "prefix": "temp/",
+                    "expiration_days": 7
+                  }
+                ],
+                "cors_enabled": true,
+                "public_read": false,
+                "encryption": "AES256"
+              }
+            ]
+          },
+          "redis": {
+            "enabled": true,
+            "use_existing": false,
+            "node_type": "cache.t3.medium",
+            "num_nodes": 2
+          },
+          "step_functions": {
+            "enabled": true,
+            "state_machines": [
+              {
+                "name": "prod-product-workflow",
+                "definition_file": "workflows/product-workflow.json"
+              }
+            ]
+          },
+          "event_bridge": {
+            "enabled": true,
+            "rules": [
+              {
+                "name": "prod-daily-product-report",
+                "schedule": "cron(0 1 * * ? *)",
+                "target": {
+                  "lambda": "prod-product-reporter"
+                }
+              }
+            ]
+          },
+          "cloudfront": {
+            "enabled": true,
+            "distribution": {
+              "enabled": true,
+              "comment": "Products API distribution",
+              "price_class": "PriceClass_100",
+              "default_root_object": "",
+              "origins": [
+                {
+                  "id": "ApiGateway",
+                  "domain_name": "${ApiGateway.domainName}",
+                  "origin_path": "/prod"
+                }
+              ]
+            }
+          },
+          "waf": {
+            "enabled": true,
+            "acl": {
+              "default_action": "allow",
+              "rules": [
+                {
+                  "name": "RateLimit",
+                  "priority": 1,
+                  "action": "block",
+                  "statement": {
+                    "rate_based": {
+                      "limit": 2000,
+                      "aggregate_key_type": "IP"
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "env_variables": {
+            "CORS_ENABLED": "true",
+            "USER_VAR": "prod-user",
+            "CORS_ORIGIN": "https://example.com",
+            "ENABLE_CACHE": "true",
+            "DEBUG_MODE": "false",
+            "API_VERSION": "v1"
+          }
+        }
+      }
+    }
+  }

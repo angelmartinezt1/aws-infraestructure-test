@@ -1,0 +1,118 @@
+# products-service/.github/workflows/ci-cd.yml
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Use Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18.x'
+          cache: 'npm'
+      - name: Install dependencies
+        run: npm ci
+      - name: Run tests
+        run: npm test
+
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Use Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18.x'
+          cache: 'npm'
+      - name: Install dependencies
+        run: npm ci
+      - name: Build
+        run: npm run build --if-present
+      - name: Create deployment package
+        run: |
+          mkdir -p dist
+          cp -r node_modules dist/
+          cp -r src/* dist/
+          cp package.json dist/
+          cd dist && zip -r ../function.zip .
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: lambda-package
+          path: function.zip
+
+  deploy-dev:
+    needs: build
+    if: github.ref == 'refs/heads/develop'
+    runs-on: ubuntu-latest
+    environment: development
+    steps:
+      - uses: actions/checkout@v3
+      - name: Download artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: lambda-package
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME_DEV }}
+          role-session-name: GithubActionsSession
+      - name: Deploy to Lambda
+        run: |
+          aws lambda update-function-code \
+            --function-name dev-products-api \
+            --zip-file fileb://function.zip \
+            --publish
+      - name: Update Lambda configuration
+        run: |
+          aws lambda update-function-configuration \
+            --function-name dev-products-api \
+            --environment "Variables={CORS_ENABLED=${{ secrets.CORS_ENABLED }},USER_VAR=${{ secrets.USER_VAR }},CORS_ORIGIN=${{ secrets.CORS_ORIGIN }},ENABLE_CACHE=${{ secrets.ENABLE_CACHE }},DEBUG_MODE=${{ secrets.DEBUG_MODE }},API_VERSION=${{ secrets.API_VERSION }}}"
+      - name: Notify deployment
+        run: |
+          echo "Deployed to development environment"
+
+  deploy-prod:
+    needs: build
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v3
+      - name: Download artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: lambda-package
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME_PROD }}
+          role-session-name: GithubActionsSession
+      - name: Deploy to Lambda
+        run: |
+          aws lambda update-function-code \
+            --function-name prod-products-api \
+            --zip-file fileb://function.zip \
+            --publish
+      - name: Update Lambda configuration
+        run: |
+          aws lambda update-function-configuration \
+            --function-name prod-products-api \
+            --environment "Variables={CORS_ENABLED=${{ secrets.CORS_ENABLED }},USER_VAR=${{ secrets.USER_VAR }},CORS_ORIGIN=${{ secrets.CORS_ORIGIN }},ENABLE_CACHE=${{ secrets.ENABLE_CACHE }},DEBUG_MODE=${{ secrets.DEBUG_MODE }},API_VERSION=${{ secrets.API_VERSION }}}"
+      - name: Notify deployment
+        run: |
+          echo "Deployed to production environment"

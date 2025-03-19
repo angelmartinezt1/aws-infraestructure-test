@@ -1,0 +1,32 @@
+{
+    "service_name": "my-aws-service",
+    "environments": {
+        "dev": {
+            "account_id": "123456789012",
+            "region": "us-east-1",
+            "profile": "dev-profile",
+            "services": {
+                "lambda": {
+                    "enabled": true,
+                    "function_name": "dev-my-service",
+                    "alias": "dev",
+                    "memory_size": 1024,
+                    "timeout": 30,
+                    "runtime": "nodejs18.x",
+                    "provisioned_concurrency": 0,
+                    "reserved_concurrency": -1,
+                    "log_retention_days": 14,
+                    "api_gateway": {
+                        "enabled": true,
+                        "cors": true,
+                        "auth": "none"
+                    }
+                },
+                "env_variables": {
+                    "CORS_ENABLED": "true",
+                    "API_VERSION": "v1"
+                }
+            }
+        }
+    }
+}
