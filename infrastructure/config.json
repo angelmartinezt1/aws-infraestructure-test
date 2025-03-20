@@ -14,7 +14,7 @@
                     "timeout": 30,
                     "runtime": "nodejs18.x",
                     "provisioned_concurrency": 0,
-                    "reserved_concurrency": -1,
+                    "reserved_concurrency": null,
                     "log_retention_days": 14,
                     "api_gateway": {
                         "enabled": true,
