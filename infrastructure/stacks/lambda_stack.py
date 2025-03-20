@@ -21,14 +21,9 @@ class LambdaStack(Stack):
             "LambdaFunction",
             runtime=_lambda.Runtime.NODEJS_18_X,
             handler="app.handler",
-            code=_lambda.Code.from_asset("../lambda"),
+            code=_lambda.Code.from_asset("./lambda"),
             vpc=vpc,
             environment={
-                "AURORA_SECRET_NAME": (
-                    db_stack.aurora_secret.secret_name
-                    if db_stack.aurora_secret
-                    else "none"
-                ),
                 "CORS_ENABLED": lambda_config.get("cors_enabled", "false"),
             },
         )
